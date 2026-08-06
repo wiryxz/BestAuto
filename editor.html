@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Editor — Admin (Firebase)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --text:#e8ecff; --muted:#a7b0d6;
+      --brand:#7c5cff; --brand2:#2dd4bf;
+      --danger:#ef4444; --ok:#22c55e;
+      --ring: color-mix(in srgb, var(--brand) 35%, transparent);
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 700px at 20% -10%, color-mix(in srgb, var(--brand) 35%, transparent), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, color-mix(in srgb, var(--brand2) 25%, transparent), transparent 60%),
+        radial-gradient(900px 600px at 50% 110%, rgba(255,255,255,.06), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width:1180px; margin:0 auto; padding:24px; }
+    .topbar{ position:sticky; top:0; z-index:50; backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(11,16,32,.9), rgba(11,16,32,.65));
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .topbar-inner{
+      max-width:1180px; margin:0 auto; padding:16px 24px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.3px; }
+    .logo{
+      width:40px; height:40px; border-radius:12px;
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+      box-shadow: 0 10px 25px color-mix(in srgb, var(--brand) 25%, transparent);
+      display:grid; place-items:center; font-weight:900;
+    }
+    .btn{
+      border:0; cursor:pointer; padding:10px 14px; border-radius:14px;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border:1px solid rgba(255,255,255,.10);
+      display:inline-flex; align-items:center; gap:10px;
+      font-size:13px; text-decoration:none;
+      user-select:none;
+    }
+    .btn:disabled{ cursor:not-allowed; opacity:.7; }
+    .btn.primary{ background: linear-gradient(135deg, var(--brand), var(--brand2)); border:1px solid rgba(255,255,255,.18); }
+    .btn.danger{ background: rgba(239,68,68,.13); border-color: rgba(239,68,68,.28); }
+    .btn.ok{ background: rgba(34,197,94,.13); border-color: rgba(34,197,94,.28); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px; margin-top:18px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel-header{
+      padding:18px 18px 12px 18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    }
+    .panel-header h2{ margin:0; font-size:18px; }
+    .panel-header p{ margin:6px 0 0 0; color:var(--muted); font-size:13px; line-height:1.35; }
+    .panel-body{ padding:16px 18px 18px 18px; }
+
+    label{ font-size:12px; color:var(--muted); display:block; margin:10px 0 6px; }
+    .input, select{
+      width:100%; padding:11px 12px; border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(15,23,48,.6);
+      color: var(--text); outline:none;
+    }
+    .input:focus, select:focus{
+      box-shadow: 0 0 0 4px var(--ring);
+      border-color: color-mix(in srgb, var(--brand) 40%, rgba(255,255,255,.10));
+    }
+    .formgrid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 640px){ .formgrid{ grid-template-columns:1fr; } }
+    .divider{ height:1px; background: rgba(255,255,255,.08); margin:14px 0; }
+    .hint{ font-size:12px; color: var(--muted); line-height:1.35; margin-top:8px; white-space:pre-wrap; }
+
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .item{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+    .item .t{ font-weight:700; }
+    .item .s{ color:var(--muted); font-size:12px; margin-top:4px; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo">F</div>
+        <div>
+          <div>Editor Admin</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;">Login + base de datos (Firebase)</div>
+        </div>
+      </div>
+      <div class="row">
+        <!-- Si renombraste catalogo.html a index.html, cambia href="./catalogo.html" por href="./" -->
+        <a class="btn" href="https://catalogo-autos-21.netlify.app" target="_blank" rel="noopener">Abrir Catálogo</a>
+        <button class="btn danger" id="btnLogout" style="display:none;">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- Login -->
+    <section class="panel" id="loginPanel">
+      <div class="panel-header">
+        <div>
+          <h2>Iniciar sesión</h2>
+          <p>Solo tú (admin) puedes entrar al editor.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="formgrid">
+          <div>
+            <label>Correo</label>
+            <input class="input" id="email" type="email" placeholder="tu@correo.com" autocomplete="email" />
+          </div>
+          <div>
+            <label>Contraseña</label>
+            <input class="input" id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+        </div>
+        <div class="divider"></div>
+        <button class="btn primary" id="btnLogin">Entrar</button>
+        <div class="hint" id="loginHint"></div>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <div class="grid" id="adminGrid" style="display:none;">
+      <!-- Personalización -->
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Personalización</h2>
+            <p>Colores, logo (tamaño/posición) e imágenes decorativas del catálogo.</p>
+          </div>
+          <div class="row">
+            <button class="btn ok" id="btnSaveTheme">Guardar</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="formgrid">
+            <div>
+              <label>Nombre del sitio</label>
+              <input class="input" id="siteName" placeholder="Ej: Autos Cali" />
+            </div>
+            <div>
+              <label>Tagline</label>
+              <input class="input" id="tagline" placeholder="Ej: Carros seleccionados — papeles al día" />
+            </div>
+
+            <div style="grid-column: 1 / -1;">
+              <label>Título (hero)</label>
+              <input class="input" id="heroTitle" placeholder="Ej: Tu vitrina de carros" />
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label>Subtítulo (hero)</label>
+              <input class="input" id="heroSubtitle" placeholder="Ej: Busca, filtra y contacta por WhatsApp." />
+            </div>
+
+            <div>
+              <label>Color principal</label>
+              <input class="input" id="brand" type="color" />
+            </div>
+            <div>
+              <label>Color secundario</label>
+              <input class="input" id="brand2" type="color" />
+            </div>
+
+            <div>
+              <label>Color fondo</label>
+              <input class="input" id="bg" type="color" />
+            </div>
+            <div>
+              <label>WhatsApp por defecto</label>
+              <input class="input" id="defaultWhatsapp" placeholder="+573001234567" />
+            </div>
+
+            <div>
+              <label>Logo por texto (2 letras)</label>
+              <input class="input" id="logoText" placeholder="Ej: AC" />
+            </div>
+            <div>
+              <label>Logo por imagen (PNG/JPG)</label>
+              <input class="input" type="file" id="logoImage" accept="image/*" />
+            </div>
+
+            <div>
+              <label>Tamaño logo (px)</label>
+              <input class="input" id="logoSizePx" type="number" min="24" max="120" step="1" />
+              <div class="hint">Recomendado: 40–64.</div>
+            </div>
+            <div>
+              <label>Posición logo</label>
+              <select id="logoAlign">
+                <option value="left">Izquierda</option>
+                <option value="center">Centrado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-weight:800; margin-bottom:8px;">Decoración (hero)</div>
+          <div class="hint">Sube 1 o 2 imágenes tipo “icono”, “carrito”, “líneas”, etc. Se muestran de fondo.</div>
+
+          <div class="formgrid">
+            <div>
+              <label>Decoración #1 (imagen)</label>
+              <input class="input" type="file" id="deco1File" accept="image/*" />
+            </div>
+            <div>
+              <label>Decoración #1 ancho (px)</label>
+              <input class="input" id="deco1Width" type="number" min="80" max="900" />
+            </div>
+            <div>
+              <label>Decoración #1 X (%)</label>
+              <input class="input" id="deco1X" type="number" min="0" max="100" />
+            </div>
+            <div>
+              <label>Decoración #1 Y (%)</label>
+              <input class="input" id="deco1Y" type="number" min="0" max="100" />
+            </div>
+            <div>
+              <label>Decoración #1 Opacidad (0–1)</label>
+              <input class="input" id="deco1Opacity" type="number" min="0" max="1" step="0.01" />
+            </div>
+            <div>
+              <label>Decoración #1 Rotación (°)</label>
+              <input class="input" id="deco1Rot" type="number" min="-180" max="180" step="1" />
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="formgrid">
+            <div>
+              <label>Decoración #2 (imagen)</label>
+              <input class="input" type="file" id="deco2File" accept="image/*" />
+            </div>
+            <div>
+              <label>Decoración #2 ancho (px)</label>
+              <input class="input" id="deco2Width" type="number" min="80" max="900" />
+            </div>
+            <div>
+              <label>Decoración #2 X (%)</label>
+              <input class="input" id="deco2X" type="number" min="0" max="100" />
+            </div>
+            <div>
+              <label>Decoración #2 Y (%)</label>
+              <input class="input" id="deco2Y" type="number" min="0" max="100" />
+            </div>
+            <div>
+              <label>Decoración #2 Opacidad (0–1)</label>
+              <input class="input" id="deco2Opacity" type="number" min="0" max="1" step="0.01" />
+            </div>
+            <div>
+              <label>Decoración #2 Rotación (°)</label>
+              <input class="input" id="deco2Rot" type="number" min="-180" max="180" step="1" />
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="row">
+            <button class="btn" id="btnClearLogo">Quitar logo imagen</button>
+            <button class="btn" id="btnClearDecos">Quitar decoraciones</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Carros -->
+      <aside class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Carros</h2>
+            <p>Crea y edita publicaciones.</p>
+          </div>
+          <div class="row">
+            <button class="btn ok" id="btnNew">+ Nuevo</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form id="carForm">
+            <input type="hidden" id="id" />
+            <label>Foto</label>
+            <input class="input" type="file" id="image" accept="image/*" />
+            <div class="divider"></div>
+
+            <div class="formgrid">
+              <div>
+                <label>Marca / Modelo</label>
+                <input class="input" id="title" required />
+              </div>
+              <div>
+                <label>Precio (COP)</label>
+                <input class="input" id="price" type="number" min="0" step="1000" required />
+              </div>
+              <div>
+                <label>Año</label>
+                <input class="input" id="year" type="number" min="1950" max="2100" required />
+              </div>
+              <div>
+                <label>Kilometraje</label>
+                <input class="input" id="km" type="number" min="0" step="100" required />
+              </div>
+              <div>
+                <label>Combustible</label>
+                <select id="fuel">
+                  <option value="Gasolina">Gasolina</option>
+                  <option value="Diésel">Diésel</option>
+                  <option value="Híbrido">Híbrido</option>
+                  <option value="Eléctrico">Eléctrico</option>
+                  <option value="Gas">Gas</option>
+                </select>
+              </div>
+              <div>
+                <label>Transmisión</label>
+                <select id="transmission">
+                  <option value="Mecánica">Mecánica</option>
+                  <option value="Automática">Automática</option>
+                  <option value="CVT">CVT</option>
+                  <option value="Tiptronic">Tiptronic</option>
+                </select>
+              </div>
+              <div>
+                <label>Ubicación</label>
+                <input class="input" id="location" />
+              </div>
+              <div>
+                <label>WhatsApp (opcional)</label>
+                <input class="input" id="whatsapp" />
+              </div>
+              <div style="grid-column:1/-1;">
+                <label>Descripción</label>
+                <input class="input" id="desc" />
+              </div>
+              <div>
+                <label>Estado</label>
+                <select id="status">
+                  <option value="available">Disponible</option>
+                  <option value="reserved">Reservado</option>
+                  <option value="sold">Vendido</option>
+                </select>
+              </div>
+              <div>
+                <label>Placa (opcional)</label>
+                <input class="input" id="plate" />
+              </div>
+            </div>
+
+            <div class="divider"></div>
+            <div class="row">
+              <button class="btn primary" type="submit">Guardar</button>
+              <button class="btn" type="button" id="btnClear">Limpiar</button>
+              <button class="btn danger" type="button" id="btnDelete" style="margin-left:auto; display:none;">Eliminar</button>
+            </div>
+          </form>
+
+          <div class="divider"></div>
+          <div style="font-weight:800; margin-bottom:10px;">Publicaciones</div>
+          <div id="list" class="list"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    // ===== Firebase config (TUYO) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHKAsIFV4lZ4f1sCiTTZTJOylyp-aIuUQ",
+      authDomain: "venta-autos-c1eb9.firebaseapp.com",
+      databaseURL: "https://venta-autos-c1eb9-default-rtdb.firebaseio.com",
+      projectId: "venta-autos-c1eb9",
+      storageBucket: "venta-autos-c1eb9.firebasestorage.app",
+      messagingSenderId: "868320914224",
+      appId: "1:868320914224:web:9c701671b46f02d4f8b6f5",
+      measurementId: "G-VX6C46EGTJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const $ = (sel) => document.querySelector(sel);
+
+    const defaultTheme = {
+      siteName: "AutoShowroom",
+      tagline: "Carros disponibles",
+      heroTitle: "Tu vitrina de carros",
+      heroSubtitle: "Busca, filtra y abre cada carro para ver el detalle y contactar por WhatsApp.",
+      brand: "#7c5cff",
+      brand2:"#2dd4bf",
+      bg:"#0b1020",
+      logoText:"A",
+      logoImage:"",
+      defaultWhatsapp:"",
+      logoSizePx: 40,
+      logoAlign: "left",
+      decorations: []
+    };
+
+    function readImageAsDataURL(file){
+      return new Promise((resolve,reject)=>{
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+
+    function fallbackImg(){
+      const svg = encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750">
+          <rect width="100%" height="100%" fill="#0b1020"/>
+          <text x="60" y="380" fill="#e8ecff" font-size="56" font-family="Arial" font-weight="800">Sin foto</text>
+        </svg>
+      `);
+      return `data:image/svg+xml;charset=utf-8,${svg}`;
+    }
+
+    // ===== Login (con errores claros) =====
+    function prettyAuthError(err){
+      const code = err?.code || "";
+      switch(code){
+        case "auth/invalid-email": return "El correo no es válido.";
+        case "auth/missing-email": return "Escribe el correo.";
+        case "auth/missing-password": return "Escribe la contraseña.";
+        case "auth/wrong-password": return "Contraseña incorrecta.";
+        case "auth/user-not-found": return "Ese correo no está registrado.";
+        case "auth/invalid-credential": return "Credenciales inválidas (correo o contraseña incorrectos).";
+        case "auth/too-many-requests": return "Demasiados intentos. Espera un momento e inténtalo otra vez.";
+        case "auth/network-request-failed": return "Error de red. Revisa tu internet.";
+        case "auth/operation-not-allowed": return "Email/Password no está habilitado en Firebase Authentication.";
+        case "auth/unauthorized-domain":
+          return "Dominio no autorizado. Ve a Firebase → Authentication → Settings → Authorized domains y agrega: catalogo-autos-21.netlify.app";
+        default:
+          return `No se pudo iniciar sesión. (${code || err?.message || "error desconocido"})`;
+      }
+    }
+
+    $("#btnLogin").onclick = async () => {
+      const btn = $("#btnLogin");
+      const hint = $("#loginHint");
+      const email = $("#email").value.trim();
+      const pass = $("#password").value;
+
+      hint.textContent = "";
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = "Entrando...";
+
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+        hint.textContent = "✅ Sesión iniciada.";
+      }catch(e){
+        hint.textContent = "❌ " + prettyAuthError(e);
+        console.error("Login error:", e);
+      }finally{
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    };
+
+    // Enter para login
+    ["email","password"].forEach(id=>{
+      const el = document.getElementById(id);
+      el?.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") document.getElementById("btnLogin").click();
+      });
+    });
+
+    $("#btnLogout").onclick = async () => { await signOut(auth); };
+
+    onAuthStateChanged(auth, async (user)=>{
+      const logged = !!user;
+      $("#loginPanel").style.display = logged ? "none" : "block";
+      $("#adminGrid").style.display = logged ? "grid" : "none";
+      $("#btnLogout").style.display = logged ? "inline-flex" : "none";
+      if(logged){
+        await loadThemeIntoForm();
+        initCarsRealtime();
+      }
+    });
+
+    // ===== Theme =====
+    async function loadThemeIntoForm(){
+      const ref = doc(db,"settings","theme");
+      const snap = await getDoc(ref);
+      const t = snap.exists() ? snap.data() : defaultTheme;
+
+      $("#siteName").value = t.siteName || "";
+      $("#tagline").value = t.tagline || "";
+      $("#heroTitle").value = t.heroTitle || "";
+      $("#heroSubtitle").value = t.heroSubtitle || "";
+      $("#brand").value = t.brand || defaultTheme.brand;
+      $("#brand2").value = t.brand2 || defaultTheme.brand2;
+      $("#bg").value = t.bg || defaultTheme.bg;
+      $("#logoText").value = t.logoText || "A";
+      $("#defaultWhatsapp").value = t.defaultWhatsapp || "";
+
+      $("#logoSizePx").value = (t.logoSizePx ?? 40);
+      $("#logoAlign").value = (t.logoAlign === "center" ? "center" : "left");
+
+      const d1 = (t.decorations && t.decorations[0]) ? t.decorations[0] : {};
+      const d2 = (t.decorations && t.decorations[1]) ? t.decorations[1] : {};
+      $("#deco1Width").value = d1.widthPx ?? 260;
+      $("#deco1X").value = d1.xPct ?? 85;
+      $("#deco1Y").value = d1.yPct ?? 35;
+      $("#deco1Opacity").value = d1.opacity ?? 0.16;
+      $("#deco1Rot").value = d1.rotateDeg ?? 0;
+
+      $("#deco2Width").value = d2.widthPx ?? 220;
+      $("#deco2X").value = d2.xPct ?? 20;
+      $("#deco2Y").value = d2.yPct ?? 55;
+      $("#deco2Opacity").value = d2.opacity ?? 0.14;
+      $("#deco2Rot").value = d2.rotateDeg ?? 0;
+    }
+
+    async function buildDecorations(prevDecorations){
+      const out = Array.isArray(prevDecorations) ? prevDecorations.slice(0,2) : [{},{}];
+      while(out.length < 2) out.push({});
+
+      const f1 = $("#deco1File").files && $("#deco1File").files[0];
+      const f2 = $("#deco2File").files && $("#deco2File").files[0];
+
+      if(f1) out[0].src = await readImageAsDataURL(f1);
+      if(f2) out[1].src = await readImageAsDataURL(f2);
+
+      out[0] = out[0].src ? {
+        src: out[0].src,
+        widthPx: Number($("#deco1Width").value || 260),
+        xPct: Number($("#deco1X").value || 85),
+        yPct: Number($("#deco1Y").value || 35),
+        opacity: Number($("#deco1Opacity").value || 0.16),
+        rotateDeg: Number($("#deco1Rot").value || 0),
+      } : {};
+
+      out[1] = out[1].src ? {
+        src: out[1].src,
+        widthPx: Number($("#deco2Width").value || 220),
+        xPct: Number($("#deco2X").value || 20),
+        yPct: Number($("#deco2Y").value || 55),
+        opacity: Number($("#deco2Opacity").value || 0.14),
+        rotateDeg: Number($("#deco2Rot").value || 0),
+      } : {};
+
+      return out.filter(x => x && x.src);
+    }
+
+    $("#btnSaveTheme").onclick = async () => {
+      const ref = doc(db,"settings","theme");
+      const prevSnap = await getDoc(ref);
+      const prev = prevSnap.exists() ? prevSnap.data() : defaultTheme;
+
+      let logoImage = prev.logoImage || "";
+      const f = $("#logoImage").files && $("#logoImage").files[0];
+      if(f) logoImage = await readImageAsDataURL(f);
+
+      const decorations = await buildDecorations(prev.decorations || []);
+
+      const t = {
+        ...prev,
+        siteName: $("#siteName").value.trim() || defaultTheme.siteName,
+        tagline: $("#tagline").value.trim() || defaultTheme.tagline,
+        heroTitle: $("#heroTitle").value.trim() || defaultTheme.heroTitle,
+        heroSubtitle: $("#heroSubtitle").value.trim() || defaultTheme.heroSubtitle,
+        brand: $("#brand").value,
+        brand2: $("#brand2").value,
+        bg: $("#bg").value,
+        logoText: ($("#logoText").value.trim() || "A").slice(0,2).toUpperCase(),
+        logoImage,
+        defaultWhatsapp: $("#defaultWhatsapp").value.trim(),
+        logoSizePx: Number($("#logoSizePx").value || 40),
+        logoAlign: ($("#logoAlign").value === "center" ? "center" : "left"),
+        decorations
+      };
+
+      await setDoc(ref, t, { merge: true });
+
+      $("#logoImage").value = "";
+      $("#deco1File").value = "";
+      $("#deco2File").value = "";
+
+      alert("Tema guardado ✅ (recarga el catálogo si no ves el cambio inmediatamente)");
+    };
+
+    $("#btnClearLogo").onclick = async () => {
+      const ref = doc(db,"settings","theme");
+      await setDoc(ref, { logoImage:"" }, { merge:true });
+      alert("Logo imagen eliminado ✅");
+    };
+
+    $("#btnClearDecos").onclick = async () => {
+      const ref = doc(db,"settings","theme");
+      await setDoc(ref, { decorations: [] }, { merge:true });
+      alert("Decoraciones eliminadas ✅");
+    };
+
+    // ===== Cars (CRUD) =====
+    let carsUnsub = null;
+    let cars = [];
+    const form = $("#carForm");
+
+    function escapeHtml(str){
+      return String(str ?? "").replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[s]));
+    }
+    function formatCOP(n){
+      const num = Number(n || 0);
+      return num.toLocaleString("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 });
+    }
+
+    function renderList(){
+      const list = $("#list");
+      list.innerHTML = "";
+      if(cars.length === 0){
+        list.innerHTML = `<div class="item"><div><div class="t">Sin publicaciones</div><div class="s">Crea una con “Nuevo”.</div></div></div>`;
+        return;
+      }
+      for(const c of cars){
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `
+          <div>
+            <div class="t">${escapeHtml(c.title)}</div>
+            <div class="s">${c.year} • ${formatCOP(c.price)} • ${c.status}</div>
+          </div>
+          <div class="row">
+            <button class="btn" data-edit="${c.id}">Editar</button>
+          </div>
+        `;
+        list.appendChild(item);
+      }
+      document.querySelectorAll("[data-edit]").forEach(b=>{
+        b.onclick = () => loadIntoForm(b.dataset.edit);
+      });
+    }
+
+    function clearForm(){
+      form.reset();
+      $("#id").value = "";
+      $("#btnDelete").style.display = "none";
+      $("#image").value = "";
+    }
+    $("#btnNew").onclick = clearForm;
+    $("#btnClear").onclick = clearForm;
+
+    async function loadIntoForm(id){
+      const c = cars.find(x => x.id === id);
+      if(!c) return;
+      $("#id").value = c.id;
+      $("#title").value = c.title || "";
+      $("#price").value = c.price ?? "";
+      $("#year").value = c.year ?? "";
+      $("#km").value = c.km ?? "";
+      $("#fuel").value = c.fuel || "Gasolina";
+      $("#transmission").value = c.transmission || "Mecánica";
+      $("#location").value = c.location || "";
+      $("#whatsapp").value = c.whatsapp || "";
+      $("#desc").value = c.desc || "";
+      $("#status").value = c.status || "available";
+      $("#plate").value = c.plate || "";
+      $("#btnDelete").style.display = "inline-flex";
+      $("#image").value = "";
+    }
+
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+
+      const id = $("#id").value;
+      const file = $("#image").files && $("#image").files[0];
+
+      const payload = {
+        title: $("#title").value.trim(),
+        price: Number($("#price").value),
+        year: Number($("#year").value),
+        km: Number($("#km").value),
+        fuel: $("#fuel").value,
+        transmission: $("#transmission").value,
+        location: $("#location").value.trim(),
+        whatsapp: $("#whatsapp").value.trim(),
+        desc: $("#desc").value.trim(),
+        status: $("#status").value,
+        plate: $("#plate").value.trim(),
+      };
+
+      if(!payload.title) return alert("Falta título");
+      if(!(payload.price >= 0)) return alert("Precio inválido");
+      if(!(payload.year >= 1950)) return alert("Año inválido");
+      if(!(payload.km >= 0)) return alert("Km inválido");
+
+      if(file){
+        payload.image = await readImageAsDataURL(file);
+      }else if(!id){
+        payload.image = fallbackImg();
+      }
+
+      if(id){
+        await updateDoc(doc(db,"cars", id), payload);
+        alert("Actualizado ✅");
+      }else{
+        payload.createdAt = Date.now();
+        await addDoc(collection(db,"cars"), payload);
+        alert("Publicado ✅");
+      }
+      clearForm();
+    });
+
+    $("#btnDelete").onclick = async () => {
+      const id = $("#id").value;
+      if(!id) return;
+      const ok = confirm("¿Eliminar esta publicación?");
+      if(!ok) return;
+      await deleteDoc(doc(db,"cars", id));
+      clearForm();
+    };
+
+    function initCarsRealtime(){
+      if(carsUnsub) carsUnsub();
+      const qCars = query(collection(db,"cars"), orderBy("createdAt","desc"));
+      carsUnsub = onSnapshot(qCars, (snap)=>{
+        cars = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        renderList();
+      });
+    }
+  </script>
+</body>
+</html>
